@@ -9,19 +9,19 @@ const TRENDING_COURSES = [
         title: "Harvard CS50",
         desc: "Change your college degree",
         videoId: "LfaMVlDaQ24",
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80"
+        image: "/images/hav.png"
     },
     {
         title: "Algorithms & Computation",
         desc: "MIT OpenCourseWare",
         videoId: "ZA-tUyM_y7s",
-        image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80"
+        image: "/images/mit.png"
     },
     {
         title: "CS50 Cybersecurity",
         desc: "Harvard University",
         videoId: "9HOpanT0GRs",
-        image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
+        image: "/images/cyber.png"
     }
 ];
 

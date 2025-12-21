@@ -1,14 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Course from "@/lib/models/Course";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
-  const course = await Course.findById(params.id);
+  const { id } = await context.params;
+
+  const course = await Course.findById(id);
   if (!course) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }

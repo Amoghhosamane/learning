@@ -2,16 +2,17 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 export async function POST(req: Request) {
   await dbConnect();
   const { courseId } = await req.json();
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions as any);
 
-  if (!session?.user?.id)
+  if (!(session as any)?.user?.id)
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
 
-  await User.findByIdAndUpdate(session.user.id, {
+  await User.findByIdAndUpdate((session as any).user.id, {
     $addToSet: { enrolledCourses: courseId },
   });
 

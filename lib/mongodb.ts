@@ -7,8 +7,8 @@ if (!MONGO_URI) {
 }
 
 interface MongooseCache {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
+  conn: any;
+  promise: any;
 }
 
 let cached = (global as any).mongoose as MongooseCache;
@@ -22,7 +22,7 @@ export default async function dbConnect() {
 
   if (!cached.promise) {
     console.log("🔌 Connecting to MongoDB:", MONGO_URI);
-    cached.promise = mongoose.connect(MONGO_URI).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(MONGO_URI!).then((mongooseInstance) => {
       console.log("✅ Connected to MongoDB DB:", mongooseInstance.connection.name);
       return mongooseInstance;
     });

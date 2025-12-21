@@ -18,10 +18,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           await dbConnect();
-          
+
           // Find user and include password (since it's select: false by default)
           const user = await User.findOne({ email: credentials.email }).select('+password');
-          
+
           if (!user) {
             throw new Error('No user found with this email');
           }
@@ -48,7 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     })
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session }: any) {
       // Add user role to token on sign in
       if (user) {
         token.role = user.role;
@@ -62,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       // Add user data to session
       if (token) {
         session.user.id = token.id as string;
@@ -73,7 +73,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
     error: '/auth/signin',
   },
   session: {
