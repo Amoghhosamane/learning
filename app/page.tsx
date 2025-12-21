@@ -31,7 +31,7 @@ export default async function HomePage() {
               "Learn at your pace",
             ].map((feature, index) => (
               <div key={index} className="flex items-center text-gray-300 text-lg">
-                <span className="mr-3">✨</span>
+                <span className="mr-3"></span>
                 {feature}
               </div>
             ))}
@@ -42,9 +42,9 @@ export default async function HomePage() {
       {/* Right Side */}
       <div className="flex-1 flex items-center justify-center px-8 py-12">
         <div className="w-full max-w-md bg-black bg-opacity-70 backdrop-blur-xl rounded-3xl border border-gray-800 p-10 shadow-2xl">
-          
+
           <h2 className="text-3xl font-bold text-white mb-4 text-center">
-            Start Your Journey 🚀
+            Start Your Journey
           </h2>
           <p className="text-gray-400 text-center mb-8">
             Create your account or sign in to access your learning dashboard.
@@ -66,7 +66,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-        
+
 
           <p className="mt-8 text-sm text-center text-gray-500">
             © 2024 SkillOrbit. Start learning today.

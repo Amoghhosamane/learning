@@ -6,7 +6,8 @@ interface CourseDetailsPageProps {
   params: { id: string };
 }
 
-export default async function CourseDetailsPage({ params }: CourseDetailsPageProps) {
+export default async function CourseDetailsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await dbConnect();
 
   let courseDoc;
