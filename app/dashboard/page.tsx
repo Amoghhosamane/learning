@@ -9,19 +9,19 @@ const TRENDING_COURSES = [
     title: "Harvard CS50",
     desc: "Change your college degree",
     videoId: "LfaMVlDaQ24",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80"
+    image: "/images/hav.png"
   },
   {
     title: "Algorithms & Computation",
     desc: "MIT OpenCourseWare",
     videoId: "ZA-tUyM_y7s",
-    image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80"
+    image: "/images/mit.png"
   },
   {
     title: "CS50 Cybersecurity",
     desc: "Harvard University",
     videoId: "9HOpanT0GRs",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
+    image: "/images/hav.png"
   }
 ];
 
@@ -39,7 +39,7 @@ const LEARNING_PATHS = [
   },
   {
     title: "Data Science & AI",
-    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c",
+    image: "/images/ds aiml.png",
     items: [
       { title: "Python", desc: "The language of AI", videoId: "K5KVEU3aaeQ" },
       { title: "Machine Learning", desc: "Predictive algorithms", videoId: "PeMlggyqz0Y" },
@@ -49,7 +49,7 @@ const LEARNING_PATHS = [
   },
   {
     title: "Cyber Security",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
+    image: "/images/cyber.png",
     items: [
       { title: "Networking Basics", desc: "Protocols & Systems", videoId: "p3vaaD9pn9I" },
       { title: "Ethical Hacking", desc: "Penetration testing", videoId: "fNzpcB7ODxQ" },
@@ -59,7 +59,7 @@ const LEARNING_PATHS = [
   },
   {
     title: "Cloud & DevOps",
-    image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d",
+    image: "/images/cloud.png",
     items: [
       { title: "AWS / Azure", desc: "Cloud infrastructure", videoId: "AfP4mtmzyj4" },
       { title: "Docker", desc: "Containerization made easy", videoId: "pg19Z8LL06w" },
@@ -69,7 +69,7 @@ const LEARNING_PATHS = [
   },
   {
     title: "Digital Marketing",
-    image: "https://images.unsplash.com/photo-1557838923-2985c318be48",
+    image: "/images/digit.png",
     items: [
       { title: "SEO", desc: "Search Engine Optimization", videoId: "xsVTqzratPs" },
       { title: "Social Media", desc: "Marketing strategies", videoId: "O9uInXzMv3Q" },
@@ -78,7 +78,7 @@ const LEARNING_PATHS = [
   },
   {
     title: "Mobile App Development",
-    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9",
+    image: "/images/mobile.png",
     items: [
       { title: "Android / iOS", desc: "Native development", videoId: "8yImX_v8f-k" },
       { title: "React Native / Flutter", desc: "Cross-platform apps", videoId: "NR3CH3JIwAY" },
@@ -86,7 +86,7 @@ const LEARNING_PATHS = [
   },
   {
     title: "UI/UX & Design",
-    image: "https://images.unsplash.com/photo-1559028012-481c04fa702d",
+    image: "/images/uiux.png",
     items: [
       { title: "Figma", desc: "Interface design tool", videoId: "1SNZRCVNizg" },
       { title: "Design Principles", desc: "Theory & Aesthetics", videoId: "c9Wg6Cb_YlU" },
