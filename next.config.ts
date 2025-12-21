@@ -1,9 +1,31 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
-    domains: ["i.imgur.com", "img.youtube.com", "googleusercontent.com", "images.unsplash.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.imgur.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+      },
+      {
+        protocol: "https",
+        hostname: "googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.pexels.com",
+      },
+    ],
   },
   reactStrictMode: false,
 };
 
-module.exports = nextConfig;
+export default nextConfig;
