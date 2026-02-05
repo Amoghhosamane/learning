@@ -27,6 +27,44 @@ Structure:
 - lib/        → Database and utility functions
 - models/     → MongoDB models
 
+## Real-time Live Classes (Socket.IO)
+
+This project includes a lightweight Socket.IO real-time layer for "Live Classes".
+
+Quick setup:
+
+1. Install dependencies:
+
+   npm install socket.io socket.io-client
+
+2. The live socket endpoint is initialized on demand when a client calls `/api/socket` (the live page does this automatically).
+
+3. Start a live session (instructor): POST `/api/live/start` { courseId }
+4. End a live session (instructor): POST `/api/live/end` { courseId }
+
+Added files:
+- `lib/socket.ts` — Socket.IO initialization + in-memory live state
+- `lib/models/LiveSession.ts` — schema to persist completed sessions
+- `app/api/socket/route.ts` — socket init endpoint
+- `app/api/live/start/route.ts` — start the live class (instructor only)
+- `app/api/live/end/route.ts` — end the live class and persist session
+- `app/live/[courseId]/page.tsx` + `LiveClient.tsx` — UI and real-time client
+
+Notes:
+- The implementation uses an in-memory map (Map) to track live sessions; completed sessions are persisted to MongoDB on end.
+- The client automatically calls `/api/socket` to ensure the server socket is initialized.
+- Ensure `MONGO_URI` and `NEXTAUTH_SECRET` are set in your environment when testing.
+
+Environment (.env.local) sample:
+
+```
+# Copy to .env.local and fill values (do NOT commit .env.local)
+MONGO_URI="mongodb+srv://<username>:<password>@cluster0.mongodb.net/skillorbit?retryWrites=true&w=majority"
+NEXTAUTH_SECRET="your-long-random-secret"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+
 ## API Routes
 
 - GET /api/courses  

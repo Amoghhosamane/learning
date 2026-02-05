@@ -12,12 +12,15 @@ export default function SignUp() {
     confirmPassword: ''
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
       setLoading(false);
       return;
     }
@@ -37,7 +40,7 @@ export default function SignUp() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || 'Registration failed');
+        setError(data.error || 'Registration failed');
         setLoading(false);
         return;
       }
@@ -52,12 +55,12 @@ export default function SignUp() {
       if (loginResult?.ok) {
         window.location.href = '/dashboard'; // or /education-dashboard
       } else {
-        alert('Account created. Please sign in.');
-        window.location.href = '/auth/signin';
+        // Fallback if auto-login fails but registration succeeded
+        window.location.href = '/auth/signin?registered=true';
       }
     } catch (error) {
       console.error('Sign up error:', error);
-      alert('An error occurred. Please try again.');
+      setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -86,11 +89,11 @@ export default function SignUp() {
               <span className="text-red-400 font-semibold">Join thousands of students</span> and <br />
               <span className="text-purple-400 font-semibold">transform your career</span>
             </p>
-            
+
             <div className="space-y-4">
               {[
                 "Expert-led courses",
-                " Hands-on projects", 
+                " Hands-on projects",
                 " Career certificates",
                 " Community support",
                 " Learn at your pace"
@@ -124,6 +127,12 @@ export default function SignUp() {
             <p className="text-gray-400 text-center mb-8">
               Create your free account
             </p>
+
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-2xl text-red-500 text-sm text-center">
+                {error}
+              </div>
+            )}
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Name Field */}
@@ -207,7 +216,7 @@ export default function SignUp() {
                     )}
                     {loading ? 'Creating Account...' : 'Create Account'}
                   </span>
-                  
+
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-800 transform -translate-x-full group-hover:translate-x-full"></div>
                 </button>
               </div>

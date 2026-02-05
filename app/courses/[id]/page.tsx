@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import Course from "@/lib/models/Course";
 import Link from "next/link";
+import InstructorBadge from '@/components/InstructorBadge';
 
 interface CourseDetailsPageProps {
   params: { id: string };
@@ -42,6 +43,7 @@ export default async function CourseDetailsPage(props: { params: Promise<{ id: s
       </Link>
 
       <h1 className="text-4xl font-bold mb-3">{course.title}</h1>
+      <InstructorBadge instructorId={String(course.instructor)} />
       <p className="text-gray-400 mb-6">{course.description}</p>
 
       {firstLesson ? (

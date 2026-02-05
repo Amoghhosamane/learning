@@ -53,16 +53,7 @@ export default function MyCoursesPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="bg-black border-b border-gray-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-red-600">
-            SkillOrbit
-          </Link>
-          <Link href="/dashboard" className="text-gray-300 hover:text-white">
-            Back to Dashboard
-          </Link>
-        </div>
-      </header>
+
 
       <main className="max-w-7xl mx-auto px-6 py-10">
 

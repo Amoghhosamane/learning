@@ -1,8 +1,197 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import React, { useEffect, useState } from 'react';
+import { Clipboard } from 'lucide-react';
+
+function CopyInstructorButton() {
+  const { data: session } = useSession();
+  const [status, setStatus] = useState<'idle' | 'loading' | 'copied'>('idle');
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const tooltipId = React.useId();
+
+  useEffect(() => {
+    let t: any;
+    if (status === 'copied') {
+      // show tooltip briefly when copied
+      setTooltipVisible(true);
+      t = setTimeout(() => {
+        setTooltipVisible(false);
+      }, 1600);
+    }
+    return () => clearTimeout(t);
+  }, [status]);
+
+  if (!session?.user?.id) return null;
+
+  const handleCopy = async () => {
+    setStatus('loading');
+    try {
+      await navigator.clipboard.writeText(session.user.id);
+      setStatus('copied');
+      setTimeout(() => setStatus('idle'), 2000);
+    } catch (err) {
+      console.warn('copy failed', err);
+      setStatus('idle');
+    }
+  };
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={handleCopy}
+        aria-label="Copy my user id"
+        aria-describedby={tooltipId}
+        onMouseEnter={() => setTooltipVisible(true)}
+        onMouseLeave={() => setTooltipVisible(false)}
+        onFocus={() => setTooltipVisible(true)}
+        onBlur={() => setTooltipVisible(false)}
+        className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600"
+      >
+        <Clipboard className={`w-4 h-4 opacity-90 transition-transform ${status === 'copied' ? 'scale-125 rotate-12' : 'scale-100'}`} />
+        <span className="select-none">{status === 'copied' ? 'Copied ✓' : 'Copy My ID'}</span>
+      </button>
+
+      {/* Accessible tooltip */}
+      <div
+        id={tooltipId}
+        role="tooltip"
+        aria-hidden={!tooltipVisible}
+        className={`absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-xs text-white px-2 py-1 rounded transition-opacity duration-150 whitespace-nowrap ${tooltipVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      >
+        {status === 'copied' ? 'Copied to clipboard' : 'Copy your user id'}
+      </div>
+    </div>
+  );
+}
+
+function UnverifiedUsersCard() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/unverified');
+      const j = await res.json();
+      if (res.ok && j.success) setUsers(j.users || []);
+      else setError(j.error || 'Failed to fetch');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch');
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const verify = async (id: string) => {
+    try {
+      const res = await fetch('/api/admin/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: id }) });
+      const j = await res.json();
+      if (res.ok && j.success) setUsers(prev => prev.filter(u => u._id !== id));
+      else alert('Failed to verify');
+    } catch (err) { console.error(err); alert('Failed to verify'); }
+  };
+
+  return (
+    <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm text-gray-400">Unverified Users</div>
+          <div className="text-white font-semibold mt-2">{loading ? 'Loading...' : `${users.length} pending`}</div>
+        </div>
+        <div className="ml-4">
+          <button onClick={fetchUsers} className="px-3 py-2 bg-gray-800 rounded text-white">Refresh</button>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2 max-h-40 overflow-auto">
+        {error && <div className="text-sm text-red-400">{error}</div>}
+        {users.length === 0 && !loading && <div className="text-sm text-gray-400">No pending verifications.</div>}
+        {users.map(u => (
+          <div key={u._id} className="flex items-center justify-between bg-gray-800 p-2 rounded">
+            <div>
+              <div className="text-sm text-white">{u.email}</div>
+              <div className="text-xs text-gray-400">{u.name || '—'}</div>
+            </div>
+            <div>
+              <button onClick={() => verify(u._id)} className="px-3 py-1 bg-red-600 text-white rounded">Verify</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function InstantMeetingCard() {
+  const router = useRouter();
+  const [joinId, setJoinId] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const createInstant = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/live/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'instant' })
+      });
+      const data = await res.json();
+      if (data.success && data.courseId) {
+        router.push(`/live/${data.courseId}`);
+      } else {
+        alert('Failed to create meeting');
+      }
+    } catch (e) {
+      alert('Error creating meeting');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const joinMeeting = () => {
+    if (!joinId) return;
+    router.push(`/live/${joinId}`);
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-blue-900/40 to-purple-900/40 rounded-2xl p-6 border border-blue-800/50">
+      <div className="text-sm text-blue-300 font-semibold mb-1">Instant Meeting</div>
+      <h3 className="text-xl font-bold text-white mb-4">Zoom-style Video Call</h3>
+
+      <div className="space-y-3">
+        <button
+          onClick={createInstant}
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition hover:scale-[1.02]"
+        >
+          {loading ? 'Creating...' : 'New Meeting'}
+        </button>
+
+        <div className="flex gap-2">
+          <input
+            value={joinId}
+            onChange={(e) => setJoinId(e.target.value)}
+            placeholder="Enter Meeting ID"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white placeholder-gray-500"
+          />
+          <button
+            onClick={joinMeeting}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg font-medium text-sm"
+          >
+            Join
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const TRENDING_COURSES = [
   {
@@ -108,26 +297,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white pb-20">
 
-      {/* HEADER */}
-      <header className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/90 to-black/0 backdrop-blur-sm transition-all duration-300">
-        <div className="flex items-center justify-between px-6 py-4 md:px-12">
-          <Link href="/" className="text-3xl font-bold text-red-600 tracking-tighter hover:scale-105 transition-transform">
-            SkillOrbit
-          </Link>
-          <div className="flex items-center space-x-6">
-            <nav className="hidden md:flex space-x-6 text-sm font-medium">
-              <Link href="/dashboard" className="text-white hover:text-gray-300 transition">Home</Link>
-              <Link href="/courses" className="text-gray-300 hover:text-white transition">Courses</Link>
-              <Link href="/my-courses" className="text-gray-300 hover:text-white transition">My Courses</Link>
-              <Link href="/latest" className="text-gray-300 hover:text-white transition">New & Popular</Link>
-            </nav>
-            <button className="text-white hover:bg-gray-800 p-2 rounded-full transition">
-              🔍
-            </button>
-            <div className="w-8 h-8 bg-red-600 rounded-md cursor-pointer"></div>
-          </div>
-        </div>
-      </header>
+
 
       {/* HERO SECTION */}
       <div className="relative h-[60vh] md:h-[80vh] w-full">
@@ -156,6 +326,7 @@ export default function Dashboard() {
             <button className="bg-gray-600/70 text-white px-8 py-2 rounded font-bold flex items-center hover:bg-gray-600/50 transition backdrop-blur-sm">
               ℹ More Info
             </button>
+
           </div>
         </div>
       </div>
@@ -232,6 +403,43 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* LIVE CLASSES SUMMARY */}
+        <div className="space-y-3 mb-8">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-100">Live Classes</h2>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 flex flex-col justify-between">
+              <div>
+                <div className="text-sm text-gray-400">Active Sessions</div>
+                <div className="text-2xl font-black text-white mt-2">See live sessions</div>
+                <p className="text-gray-400 mt-2 text-sm">Join classes or manage sessions if you are an instructor.</p>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <a href="/live/student" className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Browse Live</a>
+                <a href="/live/instructor" className="px-4 py-2 bg-red-900/50 text-red-200 border border-red-900 rounded hover:bg-red-900 transition">Instructor</a>
+              </div>
+            </div>
+
+            <InstantMeetingCard />
+
+            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+              <div className="text-sm text-gray-400">Quick Tip</div>
+              <div className="text-white font-semibold mt-2">Instructors can start a session from the course page</div>
+            </div>
+
+            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+              <div className="text-sm text-gray-400">Demo</div>
+              <div className="text-white font-semibold mt-2">Use the developer endpoints to simulate joins & demo sessions</div>
+            </div>
+          </div>
+
+          {/* Admin: Unverified users card */}
+          {session?.user?.role === 'admin' && (
+            <div className="mt-4 md:mt-6">
+              <UnverifiedUsersCard />
+            </div>
+          )}
         </div>
 
         {LEARNING_PATHS.map((path: any, index) => (

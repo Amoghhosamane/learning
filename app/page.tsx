@@ -53,7 +53,7 @@ export default async function HomePage() {
           <div className="space-y-4">
             <Link
               href="/auth/signin"
-              className="block w-full text-center bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-semibold text-lg transition-transform duration-300 hover:scale-105"
+              className="block w-full text-center bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-semibold text-lg transition-transform duration-300 hover:scale-105 shadow-lg shadow-red-900/20"
             >
               Sign In
             </Link>
@@ -64,6 +64,16 @@ export default async function HomePage() {
             >
               Create Account
             </Link>
+
+            <div className="pt-4 border-t border-gray-800">
+              <Link
+                href="/live/instructor"
+                className="flex items-center justify-center gap-2 w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-transform duration-300 hover:scale-105 shadow-lg shadow-blue-900/20"
+              >
+                <span>📹</span> Host Live Class
+              </Link>
+              <p className="text-xs text-center text-gray-500 mt-2">For Instructors & Demos</p>
+            </div>
           </div>
 
 
