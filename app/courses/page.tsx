@@ -2,6 +2,8 @@ import dbConnect from "@/lib/mongodb";
 import Course from "@/lib/models/Course";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function CoursesPage() {
   await dbConnect();
   const courses = await Course.find({ published: true });

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: skillorbit-lms
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: 20.10.0
+      - key: NEXTAUTH_URL
+        sync: false # User must provide this in dashboard
+      - key: NEXTAUTH_SECRET
+        sync: false # User must provide this
+      - key: MONGODB_URI
+        sync: false # User must provide this
