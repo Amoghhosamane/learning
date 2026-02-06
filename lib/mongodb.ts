@@ -12,7 +12,7 @@ if (!cached) {
 }
 
 export default async function dbConnect() {
-  const MONGO_URI = process.env.MONGO_URI;
+  const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!MONGO_URI) {
     throw new Error("❌ MONGO_URI is not defined. Add it in Vercel project env vars or .env.local");
