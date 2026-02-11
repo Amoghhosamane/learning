@@ -20,7 +20,7 @@ export default async function StudentLivePage() {
   for (const [courseId, state] of map.entries()) {
     let title: string | null = null;
     try {
-      const course = await Course.findById(courseId).lean();
+      const course = await Course.findById(courseId).lean() as any;
       title = course?.title || null;
     } catch (err) {
       title = null;
