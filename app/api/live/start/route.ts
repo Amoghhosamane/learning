@@ -32,12 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  // Initialize socket (best-effort)
-  try {
-    initSocket();
-  } catch (err) {
-    console.warn("Socket init warning:", err);
-  }
+
 
   const state = startLive(courseId, (session as any).user.id);
   const io = getIO();

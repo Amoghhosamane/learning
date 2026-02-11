@@ -25,12 +25,14 @@ const ensureState = () => {
 export function initSocket(server?: HTTPServer) {
   if (global.__io) return global.__io;
 
-  const io = server
-    ? new IOServer(server, { path: "/api/socket", cors: { origin: true } })
-    : new IOServer({ path: "/api/socket", cors: { origin: true } });
-
-  global.__io = io;
+  global.__io = new IOServer(server, {
+    path: "/api/socket",
+    addTrailingSlash: false,
+    cors: { origin: "*" },
+  });
   ensureState();
+
+  const io = global.__io;
 
   io.on("connection", (socket: Socket) => {
     console.log("🔌 Socket connected:", socket.id);

@@ -33,11 +33,7 @@ export async function POST(req: Request) {
     });
 
     // init socket if needed
-    try {
-      initSocket();
-    } catch (err) {
-      // ignore
-    }
+
 
     // start live session
     const state = startLive(course._id.toString(), user._id.toString());
