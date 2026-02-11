@@ -17,30 +17,35 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password required");
         }
 
-        await dbConnect();
+        try {
+          await dbConnect();
 
-        const user = await User.findOne({
-          email: credentials.email,
-        }).select("+password");
-        if (!user) {
-          throw new Error("Invalid email or password");
+          const user = await User.findOne({
+            email: credentials.email,
+          }).select("+password");
+          if (!user) {
+            throw new Error("Invalid email or password");
+          }
+
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          if (!isValid) {
+            throw new Error("Invalid email or password");
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            emailVerified: user.emailVerified,
+          };
+        } catch (err) {
+          console.error("Authorize error:", err);
+          throw err;
         }
-
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!isValid) {
-          throw new Error("Invalid email or password");
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          emailVerified: user.emailVerified,
-        };
       },
     }),
   ],

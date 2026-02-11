@@ -1,9 +1,16 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions as any);
+
+  if (session) {
+    redirect("/dashboard");
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-purple-900 flex">

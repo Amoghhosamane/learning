@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { getLiveState } from "@/lib/socket";
 import dbConnect from "@/lib/mongodb";

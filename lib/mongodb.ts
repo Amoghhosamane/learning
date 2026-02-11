@@ -21,7 +21,8 @@ export default async function dbConnect() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    console.log("🔌 Connecting to MongoDB:", MONGO_URI);
+    const sanitizedUri = MONGO_URI.replace(/:([^@]+)@/, ":****@");
+    console.log("🔌 Connecting to MongoDB (sanitized):", sanitizedUri);
     cached.promise = mongoose.connect(MONGO_URI).then((mongooseInstance) => {
       console.log("✅ Connected to MongoDB DB:", mongooseInstance.connection.name);
       return mongooseInstance;

@@ -21,15 +21,18 @@ function SessionArea() {
 
 export default function Nav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   // Hide Navbar on Landing Page and Auth Pages
   if (pathname === "/" || pathname?.startsWith("/auth")) return null;
+
+  const logoHref = session ? "/dashboard" : "/";
 
   return (
     <header className="bg-black border-b border-gray-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-3xl font-bold text-red-600 tracking-tighter">SkillOrbit</Link>
+          <Link href={logoHref} className="text-3xl font-bold text-red-600 tracking-tighter">SkillOrbit</Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
             <Link href="/courses" className="hover:text-white transition-colors">Courses</Link>
