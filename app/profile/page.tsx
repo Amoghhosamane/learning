@@ -4,6 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  User, Mail, Shield, Award, Settings,
+  FileText, Upload, Trash2, ExternalLink,
+  Video, BookOpen, ChevronRight, Zap, Star
+} from 'lucide-react';
 
 function EnrolledCoursesSection() {
   const [courses, setCourses] = useState<any[]>([]);
@@ -24,26 +30,50 @@ function EnrolledCoursesSection() {
     fetchMyCourses();
   }, []);
 
-  if (loading) return <div className="text-gray-500 text-sm">Loading courses...</div>;
-  if (courses.length === 0) return <div className="text-gray-500 text-sm">No enrolled courses yet.</div>;
+  if (loading) return (
+    <div className="flex items-center gap-3 p-6 bg-white/5 rounded-3xl animate-pulse">
+      <div className="w-12 h-12 bg-white/10 rounded-2xl" />
+      <div className="space-y-2 flex-1">
+        <div className="h-4 bg-white/10 rounded-full w-24" />
+        <div className="h-2 bg-white/10 rounded-full w-full" />
+      </div>
+    </div>
+  );
+
+  if (courses.length === 0) return (
+    <div className="p-12 text-center bg-white/5 rounded-[2.5rem] border border-dashed border-white/10">
+      <BookOpen className="mx-auto text-gray-700 mb-4" size={32} />
+      <p className="text-gray-500 font-medium italic text-sm">No courses completed yet.</p>
+    </div>
+  );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      {courses.map((course) => (
-        <Link key={course._id} href={`/courses/${course._id}`}>
-          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-red-600 transition cursor-pointer flex gap-4">
-            <div className="w-16 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-              <img src={course.image} alt="" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm line-clamp-1">{course.title}</h4>
-              <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
-                <div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${course.progress}%` }}></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      {courses.map((course, i) => (
+        <motion.div
+          key={course._id}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.1 }}
+        >
+          <Link href={`/courses/${course._id}`}>
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-4 border border-white/10 hover:border-red-600/30 transition-all group flex items-center gap-5 shadow-xl">
+              <div className="w-20 h-20 bg-gray-900 rounded-2xl overflow-hidden flex-shrink-0 border border-white/5">
+                <img src={course.image} alt="" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-xs text-gray-400 mt-1">{course.progress}% Completed</p>
+              <div className="flex-1">
+                <h4 className="font-black text-sm tracking-tight mb-3 line-clamp-1 group-hover:text-red-500 transition-colors uppercase">{course.title}</h4>
+                <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden mb-2">
+                  <div className="bg-red-600 h-full shadow-[0_0_8px_rgba(220,38,38,0.5)]" style={{ width: `${course.progress}%` }}></div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black italic text-gray-500">{course.progress}% COMPLETED</span>
+                  <ChevronRight size={14} className="text-white/20 group-hover:translate-x-1 group-hover:text-red-500 transition-all" />
+                </div>
+              </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+        </motion.div>
       ))}
     </div>
   );
@@ -52,7 +82,7 @@ function EnrolledCoursesSection() {
 function ResumeUploadSection() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [resumeUrl, setResumeUrl] = useState<string | null>(null); // In real app, fetch this from profile API
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -63,79 +93,78 @@ function ResumeUploadSection() {
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
-    // Simulate upload delay
     await new Promise(resolve => setTimeout(resolve, 1500));
-    setResumeUrl("https://example.com/resume.pdf"); // Mock success
+    setResumeUrl("https://example.com/resume.pdf");
     setUploading(false);
     setFile(null);
-    alert("Resume uploaded successfully! (Mock)");
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-      <h3 className="text-lg font-semibold mb-1">Your Resume</h3>
-      <p className="text-gray-400 text-sm mb-4">Upload your resume for recruiters to see.</p>
+    <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative group">
+      <div className="absolute top-0 left-0 w-32 h-32 bg-red-600/5 blur-[60px] rounded-full" />
 
-      {!resumeUrl ? (
-        <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-gray-800/50 transition">
-          <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mb-3">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-          </div>
-
-          {file ? (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-white">{file.name}</p>
-              <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(0)} KB</p>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 mb-4">Drag and drop or click to upload PDF</p>
-          )}
-
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            className="hidden"
-            id="resume-upload"
-          />
-
-          {!file && (
-            <label htmlFor="resume-upload" className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg cursor-pointer transition">
-              Select File
-            </label>
-          )}
-
-          {file && (
-            <button
-              onClick={handleUpload}
-              disabled={uploading}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition"
-            >
-              {uploading ? "Uploading..." : "Upload Resume"}
-            </button>
-          )}
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-6">
+          <FileText className="text-red-600" size={20} />
+          <h3 className="text-sm font-black tracking-widest uppercase">My Resume</h3>
         </div>
-      ) : (
-        <div className="flex items-center justify-between bg-gray-800 p-4 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600/20 text-red-500 rounded-lg flex items-center justify-center">
-              PDF
+
+        {!resumeUrl ? (
+          <div className="border-2 border-dashed border-white/5 rounded-3xl p-10 flex flex-col items-center justify-center text-center hover:bg-white/[0.02] hover:border-red-600/30 transition-all">
+            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-6">
+              <Upload className="text-gray-500" size={24} />
             </div>
-            <div>
-              <p className="text-sm font-medium text-white">My_Resume.pdf</p>
-              <p className="text-xs text-gray-400">Uploaded just now</p>
+
+            {file ? (
+              <div className="mb-6">
+                <p className="text-sm font-black text-white italic mb-1">{file.name}</p>
+                <p className="text-[10px] font-bold text-gray-500 tracking-widest">{(file.size / 1024).toFixed(0)} KB / PDF</p>
+              </div>
+            ) : (
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Drag/Drop Your Resume</p>
+            )}
+
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="hidden"
+              id="resume-upload"
+            />
+
+            {!file ? (
+              <label htmlFor="resume-upload" className="px-8 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-full cursor-pointer hover:scale-110 active:scale-95 transition-all">
+                Select File
+              </label>
+            ) : (
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="px-10 py-3 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:scale-110 active:scale-95 transition-all shadow-xl shadow-red-900/20"
+              >
+                {uploading ? "Uploading..." : "Upload File"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between bg-black/40 p-6 rounded-[2rem] border border-white/5">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-red-600/20 text-red-500 rounded-2xl flex items-center justify-center font-black italic text-xs">
+                PDF
+              </div>
+              <div>
+                <p className="text-sm font-black tracking-tight mb-1">My_Resume.pdf</p>
+                <p className="text-[10px] font-black text-white/30 tracking-widest uppercase leading-none">VERIFIED UPLOAD</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setResumeUrl(null)} className="text-gray-500 hover:text-red-600 transition-colors p-2">
+                <Trash2 size={18} />
+              </button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button className="text-gray-400 hover:text-white p-2">
-              View
-            </button>
-            <button onClick={() => setResumeUrl(null)} className="text-red-400 hover:text-red-300 p-2 text-sm">
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -144,7 +173,12 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  if (status === 'loading') return <div className="p-10 text-center text-gray-500">Loading profile...</div>;
+  if (status === 'loading') return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
   if (!session?.user) {
     router.push('/auth/signin');
     return null;
@@ -153,80 +187,141 @@ export default function ProfilePage() {
   const user = session.user as any;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 pb-24">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-red-500/30 overflow-x-hidden pb-24">
+      <div className="max-w-6xl mx-auto px-6 pt-32 space-y-12">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">My Profile</h1>
-          <Link href="/dashboard" className="text-gray-400 hover:text-white text-sm">Back to Dashboard</Link>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-12">
+          <div>
+            <span className="text-[10px] font-black tracking-[0.3em] text-red-600 uppercase mb-3 block">User Profile</span>
+            <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none">
+              MY <span className="text-white/20">ACCOUNT</span>
+            </h1>
+          </div>
+          <Link href="/dashboard" className="text-[10px] font-black tracking-widest text-gray-500 hover:text-white transition uppercase flex items-center gap-2">
+            <ChevronRight size={14} className="rotate-180" /> Back to Dashboard
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - User Info */}
-          <div className="space-y-6">
-            {/* User Card */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-red-600 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold">
-                {user.name?.[0] || user.email?.[0] || 'U'}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Left Wing - Profile Card */}
+          <div className="lg:col-span-4 space-y-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 text-center shadow-2xl relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/10 blur-[50px] rounded-full" />
+
+              <div className="relative z-10">
+                <div className="w-28 h-28 bg-gradient-to-br from-red-600 via-red-900 to-black rounded-[2.5rem] mx-auto mb-8 flex items-center justify-center text-4xl font-black italic border-2 border-white/10 group-hover:rotate-6 transition-transform shadow-2xl">
+                  {user.name?.[0] || user.email?.[0] || 'U'}
+                </div>
+
+                <h2 className="text-2xl font-black tracking-tighter mb-2 uppercase">{user.name || 'Anonymous User'}</h2>
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <Shield size={14} className="text-red-600" />
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{user.role || 'USER'}</span>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="p-4 bg-black/40 rounded-2xl border border-white/5 text-left">
+                    <span className="text-[9px] font-black text-gray-500 tracking-widest uppercase block mb-1">Account ID</span>
+                    <span className="text-[11px] font-mono text-white opacity-40 break-all leading-tight">{user.id}</span>
+                  </div>
+                </div>
+
+                {/* Host Action */}
+                <div className="mt-10 pt-10 border-t border-white/5">
+                  <Link href="/live/instructor">
+                    <button className="w-full bg-red-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-red-900/20">
+                      <Video size={18} />
+                      Host Live Class
+                    </button>
+                  </Link>
+                  <p className="text-[10px] text-gray-600 font-bold tracking-widest mt-4 uppercase italic">Your Instructor Panel</p>
+                </div>
               </div>
-              <h2 className="text-xl font-bold">{user.name || 'User'}</h2>
-              <p className="text-gray-400 text-sm mb-4">{user.email}</p>
+            </motion.div>
 
-              <div className="inline-block bg-gray-800 rounded-full px-3 py-1 text-xs text-gray-300 mb-6">
-                Student Account
-              </div>
-
-              {/* Host Live Class Button */}
-              <Link href="/live/instructor">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg shadow-blue-900/20">
-                  <span className="text-lg">📹</span>
-                  Host Live Class
-                </button>
-              </Link>
-              <p className="text-xs text-gray-500 mt-2">Start a Zoom-like session immediately</p>
-            </div>
-
-            {/* Resume Section */}
             <ResumeUploadSection />
           </div>
 
-          {/* Right Column - Courses & Details */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* Right Wing - Courses & Account */}
+          <div className="lg:col-span-8 space-y-12">
 
-            {/* My Learning */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">My Courses</h3>
-                <Link href="/courses" className="text-sm text-red-500 hover:text-red-400">Browse All</Link>
+            {/* My Active Learning */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <Zap size={20} className="text-red-600" />
+                  <h3 className="text-sm font-black tracking-widest uppercase">Active Courses</h3>
+                </div>
+                <Link href="/courses" className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest flex items-center gap-2">
+                  COURSES <ExternalLink size={12} />
+                </Link>
               </div>
               <EnrolledCoursesSection />
-            </div>
+            </motion.div>
 
-            {/* Account Details */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-4">Account Details</h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-800 p-4 rounded-xl">
-                    <label className="text-xs text-gray-400 block mb-1">Full Name</label>
-                    <div className="font-medium">{user.name || 'Not set'}</div>
-                  </div>
-                  <div className="bg-gray-800 p-4 rounded-xl">
-                    <label className="text-xs text-gray-400 block mb-1">Email Address</label>
-                    <div className="font-medium">{user.email}</div>
-                  </div>
-                  <div className="bg-gray-800 p-4 rounded-xl md:col-span-2">
-                    <label className="text-xs text-gray-400 block mb-1">User ID</label>
-                    <div className="font-mono text-sm break-all">{user.id}</div>
+            {/* Verification & Badges */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-8"
+            >
+              <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <Award size={20} className="text-red-600" />
+                  <h4 className="text-[10px] font-black tracking-widest uppercase">My Achievements</h4>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="w-12 h-12 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-center text-gray-700">
+                      <Star size={20} />
+                    </div>
+                  ))}
+                  <div className="flex-1 flex items-center justify-center border-2 border-dashed border-white/5 rounded-2xl text-[9px] font-black text-gray-700 uppercase p-4">
+                    Complete more courses to unlock
                   </div>
                 </div>
               </div>
+
+              <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <Mail size={20} className="text-red-600" />
+                  <h4 className="text-[10px] font-black tracking-widest uppercase">Contact Details</h4>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Primary Email</span>
+                    <div className="text-xs font-bold italic">{user.email}</div>
+                  </div>
+                  <button className="text-[10px] font-black text-white px-4 py-2 bg-white/5 rounded-xl hover:bg-white/10 transition uppercase tracking-widest">
+                    Manage Emails
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Action Zone */}
+            <div className="p-10 bg-gradient-to-r from-red-600/10 to-transparent border border-white/5 rounded-[3rem] flex flex-col md:flex-row items-center justify-between gap-8 group">
+              <div className="text-center md:text-left">
+                <h4 className="text-xl font-black tracking-tight italic mb-1 uppercase">ACCOUNT SECURITY</h4>
+                <p className="text-[11px] font-medium text-gray-500 italic max-w-sm">Ensure your login sessions are secure and your account is protected.</p>
+              </div>
+              <button className="px-10 py-5 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all">
+                SECURITY SETTINGS
+              </button>
             </div>
 
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,500 +1,218 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { useSession } from 'next-auth/react';
-import React, { useEffect, useState } from 'react';
-import { Clipboard } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
+import {
+  Play, Info, Clock, Users, Video,
+  ChevronRight, Star, ArrowRight, ShieldCheck,
+  LayoutDashboard, Library, MonitorPlay, Zap
+} from "lucide-react";
 
-function CopyInstructorButton() {
-  const { data: session } = useSession();
-  const [status, setStatus] = useState<'idle' | 'loading' | 'copied'>('idle');
-  const [tooltipVisible, setTooltipVisible] = useState(false);
-  const tooltipId = React.useId();
-
-  useEffect(() => {
-    let t: any;
-    if (status === 'copied') {
-      // show tooltip briefly when copied
-      setTooltipVisible(true);
-      t = setTimeout(() => {
-        setTooltipVisible(false);
-      }, 1600);
-    }
-    return () => clearTimeout(t);
-  }, [status]);
-
-  if (!session?.user?.id) return null;
-
-  const handleCopy = async () => {
-    setStatus('loading');
-    try {
-      await navigator.clipboard.writeText(session.user.id);
-      setStatus('copied');
-      setTimeout(() => setStatus('idle'), 2000);
-    } catch (err) {
-      console.warn('copy failed', err);
-      setStatus('idle');
-    }
-  };
-
-  return (
-    <div className="relative inline-block">
-      <button
-        onClick={handleCopy}
-        aria-label="Copy my user id"
-        aria-describedby={tooltipId}
-        onMouseEnter={() => setTooltipVisible(true)}
-        onMouseLeave={() => setTooltipVisible(false)}
-        onFocus={() => setTooltipVisible(true)}
-        onBlur={() => setTooltipVisible(false)}
-        className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600"
-      >
-        <Clipboard className={`w-4 h-4 opacity-90 transition-transform ${status === 'copied' ? 'scale-125 rotate-12' : 'scale-100'}`} />
-        <span className="select-none">{status === 'copied' ? 'Copied ✓' : 'Copy My ID'}</span>
-      </button>
-
-      {/* Accessible tooltip */}
-      <div
-        id={tooltipId}
-        role="tooltip"
-        aria-hidden={!tooltipVisible}
-        className={`absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-xs text-white px-2 py-1 rounded transition-opacity duration-150 whitespace-nowrap ${tooltipVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-      >
-        {status === 'copied' ? 'Copied to clipboard' : 'Copy your user id'}
-      </div>
-    </div>
-  );
-}
-
-function UnverifiedUsersCard() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/unverified');
-      const j = await res.json();
-      if (res.ok && j.success) setUsers(j.users || []);
-      else setError(j.error || 'Failed to fetch');
-    } catch (err) {
-      console.error(err);
-      setError('Failed to fetch');
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchUsers(); }, []);
-
-  const verify = async (id: string) => {
-    try {
-      const res = await fetch('/api/admin/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: id }) });
-      const j = await res.json();
-      if (res.ok && j.success) setUsers(prev => prev.filter(u => u._id !== id));
-      else alert('Failed to verify');
-    } catch (err) { console.error(err); alert('Failed to verify'); }
-  };
-
-  return (
-    <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm text-gray-400">Unverified Users</div>
-          <div className="text-white font-semibold mt-2">{loading ? 'Loading...' : `${users.length} pending`}</div>
-        </div>
-        <div className="ml-4">
-          <button onClick={fetchUsers} className="px-3 py-2 bg-gray-800 rounded text-white">Refresh</button>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2 max-h-40 overflow-auto">
-        {error && <div className="text-sm text-red-400">{error}</div>}
-        {users.length === 0 && !loading && <div className="text-sm text-gray-400">No pending verifications.</div>}
-        {users.map(u => (
-          <div key={u._id} className="flex items-center justify-between bg-gray-800 p-2 rounded">
-            <div>
-              <div className="text-sm text-white">{u.email}</div>
-              <div className="text-xs text-gray-400">{u.name || '—'}</div>
-            </div>
-            <div>
-              <button onClick={() => verify(u._id)} className="px-3 py-1 bg-red-600 text-white rounded">Verify</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
-function InstantMeetingCard() {
-  const router = useRouter();
-  const [joinId, setJoinId] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const createInstant = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/live/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'instant' })
-      });
-      const data = await res.json();
-      if (data.success && data.courseId) {
-        router.push(`/live/${data.courseId}`);
-      } else {
-        alert('Failed to create meeting');
-      }
-    } catch (e) {
-      alert('Error creating meeting');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const joinMeeting = () => {
-    if (!joinId) return;
-    router.push(`/live/${joinId}`);
-  };
-
-  return (
-    <div className="bg-gradient-to-br from-blue-900/40 to-purple-900/40 rounded-2xl p-6 border border-blue-800/50">
-      <div className="text-sm text-blue-300 font-semibold mb-1">Instant Meeting</div>
-      <h3 className="text-xl font-bold text-white mb-4">Zoom-style Video Call</h3>
-
-      <div className="space-y-3">
-        <button
-          onClick={createInstant}
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition hover:scale-[1.02]"
-        >
-          {loading ? 'Creating...' : 'New Meeting'}
-        </button>
-
-        <div className="flex gap-2">
-          <input
-            value={joinId}
-            onChange={(e) => setJoinId(e.target.value)}
-            placeholder="Enter Meeting ID"
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white placeholder-gray-500"
-          />
-          <button
-            onClick={joinMeeting}
-            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg font-medium text-sm"
-          >
-            Join
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+// --- DATA ---
 const TRENDING_COURSES = [
-  {
-    title: "Harvard CS50",
-    desc: "Change your college degree",
-    videoId: "LfaMVlDaQ24",
-    image: "/images/hav.png"
-  },
-  {
-    title: "Algorithms & Computation",
-    desc: "MIT OpenCourseWare",
-    videoId: "ZA-tUyM_y7s",
-    image: "/images/mit.png"
-  },
-  {
-    title: "CS50 Cybersecurity",
-    desc: "Harvard University",
-    videoId: "9HOpanT0GRs",
-    image: "/images/hav.png"
-  }
+  { title: "Harvard CS50", desc: "Computer Science Essentials", videoId: "LfaMVlDaQ24", image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=300&auto=format&fit=crop", rating: 4.9 },
+  { title: "MIT Algorithms", desc: "Master Complex Computation", videoId: "ZA-tUyM_y7s", image: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?q=80&w=300&auto=format&fit=crop", rating: 4.8 },
+  { title: "Cybersecurity 101", desc: "Protect Digital Assets", videoId: "9HOpanT0GRs", image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=300&auto=format&fit=crop", rating: 4.7 }
 ];
 
 const LEARNING_PATHS = [
   {
-    title: "Full-Stack Development",
-    image: "/images/web.png",
+    title: "Development Masterclass",
     items: [
-      { title: "HTML, CSS, JS", desc: "The building blocks of the web", videoId: "nu_pCVPKzTk" },
-      { title: "React JS", desc: "Modern frontend library", videoId: "CgkZ7MvWUAA" },
-      { title: "Next.js", desc: "The React Framework", videoId: "843nec-IvW0" },
-      { title: "Node.js, MongoDB", desc: "Backend & Database mastery", videoId: "_7UQPve99r4" },
-      { title: "Projects", desc: "Build real-world applications", videoId: "rOpEN1JDaD0" },
+      { title: "Next.js 14", desc: "Full-Stack React", videoId: "843nec-IvW0" },
+      { title: "TypeScript Mastery", desc: "Safe Code Patterns", videoId: "nu_pCVPKzTk" },
+      { title: "Prisma & SQL", desc: "Modern Databases", videoId: "_7UQPve99r4" }
     ]
   },
   {
-    title: "Data Science & AI",
-    image: "/images/ds aiml.png",
+    title: "AI & Data Science",
     items: [
-      { title: "Python", desc: "The language of AI", videoId: "K5KVEU3aaeQ" },
-      { title: "Machine Learning", desc: "Predictive algorithms", videoId: "PeMlggyqz0Y" },
-      { title: "Deep Learning", desc: "Neural networks basics", videoId: "V_xro1bcAuA" },
-      { title: "AI Tools", desc: "Leverage modern AI stack", videoId: "yHk7Vavmc7Q" },
-    ]
-  },
-  {
-    title: "Cyber Security",
-    image: "/images/cyber.png",
-    items: [
-      { title: "Networking Basics", desc: "Protocols & Systems", videoId: "p3vaaD9pn9I" },
-      { title: "Ethical Hacking", desc: "Penetration testing", videoId: "fNzpcB7ODxQ" },
-      { title: "Web Security", desc: "Secure your applications", videoId: "GY07qJl6eZo" },
-      { title: "OWASP Top 10", desc: "Critical risks explained", videoId: "-Q3wUMOFsio" },
-    ]
-  },
-  {
-    title: "Cloud & DevOps",
-    image: "/images/cloud.png",
-    items: [
-      { title: "AWS / Azure", desc: "Cloud infrastructure", videoId: "AfP4mtmzyj4" },
-      { title: "Docker", desc: "Containerization made easy", videoId: "pg19Z8LL06w" },
-      { title: "CI/CD", desc: "Automated deployment pipelines", videoId: "scEDHsr3APg" },
-      { title: "Linux", desc: "OS fundamentals", videoId: "wBp0Rb-ZJak" },
-    ]
-  },
-  {
-    title: "Digital Marketing",
-    image: "/images/digit.png",
-    items: [
-      { title: "SEO", desc: "Search Engine Optimization", videoId: "xsVTqzratPs" },
-      { title: "Social Media", desc: "Marketing strategies", videoId: "O9uInXzMv3Q" },
-      { title: "Ads & Analytics", desc: "Data-driven growth", videoId: "m3vXQ_Vp-rM" },
-    ]
-  },
-  {
-    title: "Mobile App Development",
-    image: "/images/mobile.png",
-    items: [
-      { title: "Android / iOS", desc: "Native development", videoId: "8yImX_v8f-k" },
-      { title: "React Native / Flutter", desc: "Cross-platform apps", videoId: "NR3CH3JIwAY" },
-    ]
-  },
-  {
-    title: "UI/UX & Design",
-    image: "/images/uiux.png",
-    items: [
-      { title: "Figma", desc: "Interface design tool", videoId: "1SNZRCVNizg" },
-      { title: "Design Principles", desc: "Theory & Aesthetics", videoId: "c9Wg6Cb_YlU" },
-      { title: "Prototyping", desc: "Interactive mockups", videoId: "FTFaQWZBqQ8" },
+      { title: "Python for AI", desc: "Core Fundamentals", videoId: "K5KVEU3aaeQ" },
+      { title: "Linear Algebra", desc: "Math for ML", videoId: "PeMlggyqz0Y" },
+      { title: "TensorFlow", desc: "Deep Learning Intro", videoId: "V_xro1bcAuA" }
     ]
   }
 ];
 
+// --- COMPONENTS ---
 
 export default function Dashboard() {
   const { data: session } = useSession();
-
-  const CONTINUE_WATCHING = [
-    { title: "HTML, CSS, JS", desc: "The building blocks of the web", videoId: "nu_pCVPKzTk" },
-    { title: "React JS", desc: "Modern frontend library", videoId: "CgkZ7MvWUAA" },
-    { title: "Next.js", desc: "The React Framework", videoId: "843nec-IvW0" },
-  ];
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("all");
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white pb-20">
+    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-red-500/30 pb-20 overflow-x-hidden">
 
-
-
-      {/* HERO SECTION */}
-      <div className="relative h-[60vh] md:h-[80vh] w-full">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent"></div>
+      {/* --- HERO SECTION --- */}
+      <section className="relative h-[85vh] w-full flex items-center justify-start overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/20 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent z-10" />
+          <img
+            src="https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=2031&auto=format&fit=crop"
+            className="w-full h-full object-cover opacity-60 scale-105 animate-slow-zoom"
+            alt="Hero Background"
+          />
         </div>
 
-        <div className="absolute bottom-1/4 left-6 md:left-12 max-w-xl space-y-4">
-          <h1 className="text-5xl md:text-7xl font-bold leading-tight drop-shadow-lg">
-            Master Full-Stack
-          </h1>
-          <div className="flex items-center space-x-3 text-green-400 font-semibold text-sm">
-            <span>98% Match</span>
-            <span className="text-gray-300">2024</span>
-            <span className="border border-gray-500 px-1 text-xs text-gray-300">18+</span>
-            <span className="text-gray-300">6 Seasons</span>
-          </div>
-          <p className="text-gray-200 text-lg drop-shadow-md line-clamp-3">
-            Become a top-tier developer by mastering the entire stack. From React frontends to Node.js backends, this journey will transform your career.
-          </p>
-          <div className="flex space-x-4 pt-4">
-            <button className="bg-white text-black px-8 py-2 rounded font-bold flex items-center hover:bg-opacity-80 transition">
-              ▶ Play
-            </button>
-            <button className="bg-gray-600/70 text-white px-8 py-2 rounded font-bold flex items-center hover:bg-gray-600/50 transition backdrop-blur-sm">
-              ℹ More Info
-            </button>
-
-          </div>
+        <div className="container mx-auto px-6 lg:px-12 relative z-20 max-w-4xl pt-20">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <span className="px-3 py-1 bg-red-600 text-[10px] font-black tracking-widest uppercase rounded">ORIGINAL</span>
+              <span className="text-sm font-bold text-gray-400">SERIES / FULL-STACK</span>
+            </div>
+            <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter mb-6 leading-tight drop-shadow-2xl">
+              CODE<span className="text-red-600">HORIZON</span>
+            </h1>
+            <p className="text-lg text-gray-300 mb-8 leading-relaxed max-w-lg drop-shadow-md">
+              The definitive journey for modern developers. Master the artifacts of the web and build the next generation of digital experiences.
+            </p>
+            <div className="flex items-center gap-4">
+              <Link href="/latest" className="px-8 py-3 bg-white text-black font-black rounded-full flex items-center gap-2 hover:bg-white/90 transition transform hover:scale-105 active:scale-95">
+                <Play size={20} fill="black" /> START NOW
+              </Link>
+              <button className="px-8 py-3 bg-white/10 backdrop-blur-xl border border-white/10 text-white font-black rounded-full flex items-center gap-2 hover:bg-white/20 transition">
+                <Info size={20} /> MORE INFO
+              </button>
+            </div>
+          </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* ROWS */}
-      <div className="relative z-10 -mt-24 space-y-8 pl-6 md:pl-12 overflow-x-hidden">
+      {/* --- QUICK ACTIONS BAR --- */}
+      <section className="relative z-30 -mt-16 container mx-auto px-6 lg:px-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Link href="/live" className="p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 group hover:bg-red-600 transition-all duration-500 shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-red-600/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+              <Video className="text-red-600 group-hover:text-white" size={24} />
+            </div>
+            <span className="text-xs font-black tracking-widest uppercase text-gray-400 group-hover:text-white">Live Classes</span>
+          </Link>
 
-        {/* CONTINUE WATCHING FOR USER */}
-        {session?.user && (
-          <div className="space-y-3 mb-8">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-100 hover:text-white transition cursor-pointer inline-block">
-              Continue Watching for {session.user.name || "User"}
-            </h2>
-            <div className="group relative">
-              <div className="flex space-x-4 overflow-x-scroll scrollbar-hide py-4 pr-12 scroll-smooth">
-                {CONTINUE_WATCHING.map((item, i) => (
-                  <Link key={i} href={`/video/${item.videoId}?title=${encodeURIComponent(item.title)}`}>
-                    <motion.div
-                      className="flex-none w-64 md:w-80 aspect-video bg-gray-900 rounded-md relative overflow-hidden cursor-pointer border border-gray-800"
-                      whileHover={{
-                        scale: 1.05,
-                        zIndex: 10,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      {/* Fallback pattern since this is a custom list without category image */}
-                      <div className={`absolute inset-0 bg-gradient-to-br from-gray-800 to-black p-6 flex flex-col justify-end from-red-900/40`}>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                          <span className="text-6xl">▶</span>
-                        </div>
-                        <div className="relative z-10">
-                          <h3 className="text-lg font-bold text-white mb-1 leading-tight">{item.title}</h3>
-                          <div className="w-full bg-gray-700 h-1 mt-2 rounded-full overflow-hidden">
-                            <div className="bg-red-600 h-full w-1/3"></div>
-                          </div>
-                          <p className="text-xs text-gray-400 mt-1">S1:E{i + 1}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </Link>
-                ))}
+          <Link href="/courses" className="p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 group hover:bg-white/10 transition-all duration-500 shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+              <Library className="text-white" size={24} />
+            </div>
+            <span className="text-xs font-black tracking-widest uppercase text-gray-400 group-hover:text-white">Path Library</span>
+          </Link>
+
+          <Link href="/live/instructor" className="p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 group hover:bg-white/10 transition-all duration-500 shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+              <Zap className="text-yellow-500" size={24} />
+            </div>
+            <span className="text-xs font-black tracking-widest uppercase text-gray-400 group-hover:text-white">Host Class</span>
+          </Link>
+
+          <div className="md:col-span-2 p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl flex items-center justify-between gap-6 shadow-2xl">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center text-xl font-black italic">
+                {session?.user?.name?.[0] || "?"}
+              </div>
+              <div>
+                <h4 className="text-sm font-black tracking-tight">{session?.user?.name || "Member"}</h4>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Premium Learner</p>
               </div>
             </div>
+            <div className="flex flex-col items-end">
+              <span className="text-2xl font-black text-red-600 tracking-tighter italic">126 XP</span>
+              <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Orbit Rank #34</span>
+            </div>
           </div>
-        )}
+        </div>
+      </section>
 
-        {/* TRENDING NOW SECTION */}
-        <div className="space-y-3 mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-100 hover:text-white transition cursor-pointer inline-block">
-            Trending Now
-          </h2>
-          <div className="group relative">
-            <div className="flex space-x-4 overflow-x-scroll scrollbar-hide py-4 pr-12 scroll-smooth">
-              {TRENDING_COURSES.map((item, i) => (
-                <Link key={i} href={`/video/${item.videoId}?title=${encodeURIComponent(item.title)}`}>
-                  <motion.div
-                    className="flex-none w-64 md:w-80 aspect-video bg-gray-900 rounded-md relative overflow-hidden cursor-pointer border border-gray-800"
-                    whileHover={{
-                      scale: 1.05,
-                      zIndex: 10,
-                      transition: { duration: 0.3 }
-                    }}
-                  >
-                    <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover opacity-60 hover:opacity-80 transition-opacity" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+      {/* --- CONTENT ROWS --- */}
+      <section className="pt-24 space-y-16">
 
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end z-20">
-                      <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm w-fit mb-2">TOP 10</span>
-                      <h3 className="text-lg font-bold text-white mb-1 leading-tight drop-shadow-md">{item.title}</h3>
-                      <p className="text-xs text-gray-300 line-clamp-2 drop-shadow-sm">{item.desc}</p>
+        {/* ROW: TRENDING */}
+        <div className="container mx-auto px-6 lg:px-12 space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter">TRENDING <span className="text-red-600">NOW</span></h2>
+            <Link href="/latest" className="text-xs font-bold text-gray-500 tracking-widest hover:text-white transition flex items-center gap-2">
+              VIEW ALL <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {TRENDING_COURSES.map((course, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ y: -10 }}
+                className="group relative h-64 rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl transition-all cursor-pointer"
+                onClick={() => router.push(`/video/${course.videoId}?title=${course.title}`)}
+              >
+                <img src={course.image} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" alt={course.title} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
+                <div className="absolute inset-x-6 bottom-6 z-20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star size={12} className="text-red-600 fill-red-600" />
+                    <span className="text-[10px] font-black text-white">{course.rating}</span>
+                  </div>
+                  <h3 className="text-lg font-black tracking-tight leading-none mb-1">{course.title}</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{course.desc}</p>
+                </div>
+                <div className="absolute top-6 right-6 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                    <Play size={16} fill="white" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* ROW: LEARNING PATHS */}
+        {LEARNING_PATHS.map((path, i) => (
+          <div key={i} className="container mx-auto px-6 lg:px-12 space-y-8">
+            <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase">{path.title}</h2>
+
+            <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x">
+              {path.items.map((item, j) => (
+                <motion.div
+                  key={j}
+                  whileHover={{ scale: 1.05 }}
+                  className="flex-none w-72 md:w-96 snap-start group cursor-pointer"
+                  onClick={() => router.push(`/video/${item.videoId}?title=${item.title}`)}
+                >
+                  <div className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/5 mb-4 group-hover:border-red-600/50 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-transparent to-transparent translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-700" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play size={40} className="text-white fill-white" />
                     </div>
-                  </motion.div>
-                </Link>
+                    <div className="absolute bottom-4 right-4 text-[10px] font-mono text-white/40 group-hover:text-red-500 transition-colors">
+                      VOL.{j + 1} / MOD.0{j + 1}
+                    </div>
+                  </div>
+                  <h4 className="text-base font-black tracking-tight group-hover:text-red-500 transition-colors">{item.title}</h4>
+                  <p className="text-xs text-gray-500 font-medium italic">{item.desc}</p>
+                </motion.div>
               ))}
             </div>
           </div>
-        </div>
-
-        {/* LIVE CLASSES SUMMARY */}
-        <div className="space-y-3 mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-100">Live Classes</h2>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 flex flex-col justify-between">
-              <div>
-                <div className="text-sm text-gray-400">Active Sessions</div>
-                <div className="text-2xl font-black text-white mt-2">See live sessions</div>
-                <p className="text-gray-400 mt-2 text-sm">Join classes or manage sessions if you are an instructor.</p>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <a href="/live/student" className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Browse Live</a>
-                <a href="/live/instructor" className="px-4 py-2 bg-red-900/50 text-red-200 border border-red-900 rounded hover:bg-red-900 transition">Instructor</a>
-              </div>
-            </div>
-
-            <InstantMeetingCard />
-
-            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-              <div className="text-sm text-gray-400">Quick Tip</div>
-              <div className="text-white font-semibold mt-2">Instructors can start a session from the course page</div>
-            </div>
-
-            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-              <div className="text-sm text-gray-400">Demo</div>
-              <div className="text-white font-semibold mt-2">Use the developer endpoints to simulate joins & demo sessions</div>
-            </div>
-          </div>
-
-          {/* Admin: Unverified users card */}
-          {session?.user?.role === 'admin' && (
-            <div className="mt-4 md:mt-6">
-              <UnverifiedUsersCard />
-            </div>
-          )}
-        </div>
-
-        {LEARNING_PATHS.map((path: any, index) => (
-          <div key={index} className="space-y-3">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-100 hover:text-white transition cursor-pointer inline-block">
-              {path.title}
-            </h2>
-
-            <div className="group relative">
-              {/* Scroll Container */}
-              <div className="flex space-x-4 overflow-x-scroll scrollbar-hide py-4 pr-12 scroll-smooth">
-                {path.items.map((item: any, i: number) => {
-                  const CardContent = (
-                    <motion.div
-                      className="flex-none w-64 md:w-80 aspect-video bg-gray-900 rounded-md relative overflow-hidden cursor-pointer border border-gray-800"
-                      whileHover={{
-                        scale: 1.05,
-                        zIndex: 10,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      {/* Image or Placeholder */}
-                      {path.image ? (
-                        <>
-                          <img src={path.image} alt={path.title} className="absolute inset-0 w-full h-full object-cover opacity-60 hover:opacity-80 transition-opacity" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-                        </>
-                      ) : (
-                        <div className={`absolute inset-0 bg-gradient-to-br from-gray-800 to-black p-6 flex flex-col justify-end
-                                  ${i % 3 === 0 ? 'from-red-900/20' : ''} 
-                                  ${i % 3 === 1 ? 'from-blue-900/20' : ''} 
-                                  ${i % 3 === 2 ? 'from-purple-900/20' : ''}
-                              `}></div>
-                      )}
-
-                      <div className="absolute inset-0 p-6 flex flex-col justify-end z-20">
-                        <h3 className="text-lg font-bold text-white mb-1 leading-tight drop-shadow-md">{item.title}</h3>
-                        <p className="text-xs text-gray-300 line-clamp-2 drop-shadow-sm">{item.desc}</p>
-                      </div>
-                    </motion.div>
-                  );
-
-                  return item.videoId ? (
-                    <Link key={i} href={`/video/${item.videoId}?title=${encodeURIComponent(item.title)}`}>
-                      {CardContent}
-                    </Link>
-                  ) : (
-                    <div key={i}>{CardContent}</div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
         ))}
-      </div>
+      </section>
+
+      {/* --- PREMIUM CALL TO ACTION --- */}
+      <section className="container mx-auto px-6 lg:px-12 pt-24 pb-12 text-center">
+        <div className="p-12 md:p-20 rounded-[3rem] bg-gradient-to-b from-red-600/10 to-transparent border border-white/5 backdrop-blur-3xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-[100px] rounded-full" />
+          <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter mb-6 uppercase">Upgrade to <span className="text-red-600">Elite</span></h2>
+          <p className="text-gray-400 max-w-xl mx-auto mb-10 text-sm font-medium leading-relaxed">
+            Unlock the full potential of SkillOrbit. Get exclusive access to the instructor workspace, dedicated mentorship, and verified certifications.
+          </p>
+          <button className="px-10 py-4 bg-red-600 text-white font-black rounded-full hover:scale-105 active:scale-95 transition-all shadow-[0_15px_40px_rgba(220,38,38,0.3)] group-hover:shadow-red-600/50">
+            EXPLORE ELITE PLAN
+          </button>
+        </div>
+      </section>
 
     </div>
   );

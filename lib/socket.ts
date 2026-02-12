@@ -3,167 +3,200 @@ import { Server as HTTPServer } from "http";
 import dbConnect from "./mongodb";
 import LiveSessionModel from "./models/LiveSession";
 
+// Structure for tracking a live class
 type LiveClassState = {
-  courseId: string;
-  instructorId: string;
-  startTime: Date;
-  attendees: Set<string>;
+  courseId: string;          // Course identifier
+  instructorId: string;      // Instructor running the class
+  startTime: Date;           // When class started
+  attendees: Set<string>;    // Unique attendees (userIds)
 };
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  var __io: IOServer | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  var __liveClasses: Map<string, LiveClassState> | undefined;
+  var __io: IOServer | undefined;                // Singleton Socket.IO instance
+  var __liveClasses: Map<string, LiveClassState> | undefined; // Global live class store
 }
 
+// Ensure live class map exists
 const ensureState = () => {
   if (!global.__liveClasses) global.__liveClasses = new Map();
   return global.__liveClasses as Map<string, LiveClassState>;
 };
 
 export function initSocket(server?: HTTPServer) {
+  // Reuse existing Socket.IO server if already created
   if (global.__io) return global.__io;
 
+  // Initialize Socket.IO server
   global.__io = new IOServer(server, {
-    path: "/api/socket",
-    addTrailingSlash: false,
-    cors: { origin: "*" },
+    path: "/api/socket",     // Custom socket path
+    addTrailingSlash: false, // Prevent trailing slash issues
+    cors: { origin: "*" },   // Allow all origins (dev-friendly)
   });
-  ensureState();
 
+  ensureState(); // Initialize global live state
   const io = global.__io;
 
+  // Handle new socket connections
   io.on("connection", (socket: Socket) => {
     console.log("🔌 Socket connected:", socket.id);
 
-    socket.on("joinClass", ({ courseId, userId }: { courseId: string; userId: string }) => {
+    // User joins a live class
+    socket.on("joinClass", ({ courseId, userId }) => {
       try {
         const map = ensureState();
         const state = map.get(courseId);
-        if (!state) return socket.emit("error", "Class not live");
 
-        // add to attendees set
-        state.attendees.add(userId);
-        socket.join(courseId);
-        // map socket to user
-        (socket as any).userId = userId;
-        (socket as any).courseId = courseId;
+        if (!state) return socket.emit("error", "Class not live"); // Reject if class inactive
 
-        const count = state.attendees.size;
-        io.to(courseId).emit("attendanceUpdate", { courseId, count });
+        state.attendees.add(userId); // Track attendee
+        socket.join(courseId);       // Join socket room
+
+        (socket as any).userId = userId;     // Attach userId to socket
+        (socket as any).courseId = courseId; // Attach courseId to socket
+
+        const count = state.attendees.size;  // Calculate attendee count
+        io.to(courseId).emit("attendanceUpdate", { courseId, count }); // Notify room
       } catch (err) {
         console.error("joinClass error", err);
       }
     });
 
+    // User leaves class manually
     socket.on("leaveClass", () => {
       const userId = (socket as any).userId;
       const courseId = (socket as any).courseId;
-      if (!courseId || !userId) return;
+
+      if (!courseId || !userId) return; // Ignore if missing data
+
       const map = ensureState();
       const state = map.get(courseId);
       if (!state) return;
-      state.attendees.delete(userId);
-      socket.leave(courseId);
-      io.to(courseId).emit("attendanceUpdate", { courseId, count: state.attendees.size });
+
+      state.attendees.delete(userId); // Remove attendee
+      socket.leave(courseId);         // Leave room
+
+      io.to(courseId).emit("attendanceUpdate", {
+        courseId,
+        count: state.attendees.size,  // Broadcast new count
+      });
     });
 
-    // Chat messages within a live class
-    socket.on("chatMessage", ({ courseId, userId, name, text }: { courseId: string; userId: string; name?: string; text: string }) => {
+    // Chat message inside class
+    socket.on("chatMessage", ({ courseId, userId, name, text }) => {
       try {
-        const msg = { userId, name: name || "Unknown", text, time: new Date().toISOString() };
-        io.to(courseId).emit("chatMessage", msg);
+        const msg = {
+          userId,
+          name: name || "Unknown", // Default name fallback
+          text,
+          time: new Date().toISOString(), // Timestamp
+        };
+
+        io.to(courseId).emit("chatMessage", msg); // Broadcast to class room
       } catch (err) {
         console.error("chatMessage error", err);
       }
     });
 
-    socket.on("endClass", async ({ courseId }: { courseId: string }) => {
-      // Instructor may emit this
+    // Instructor ends class via socket
+    socket.on("endClass", async ({ courseId }) => {
       const map = ensureState();
       const state = map.get(courseId);
       if (!state) return;
 
-      // persist
       try {
-        await dbConnect();
+        await dbConnect(); // Connect DB
         await LiveSessionModel.create({
           courseId,
           instructorId: state.instructorId,
           startTime: state.startTime,
           endTime: new Date(),
-          attendees: Array.from(state.attendees),
+          attendees: Array.from(state.attendees), // Save attendees list
         });
       } catch (err) {
         console.error("Failed to save live session", err);
       }
 
-      io.to(courseId).emit("classEnded", { courseId });
-      map.delete(courseId);
+      io.to(courseId).emit("classEnded", { courseId }); // Notify clients
+      map.delete(courseId); // Remove from memory
     });
 
+    // Handle unexpected disconnect
     socket.on("disconnect", () => {
       const userId = (socket as any).userId;
       const courseId = (socket as any).courseId;
+
       if (!courseId || !userId) return;
+
       const map = ensureState();
       const state = map.get(courseId);
       if (!state) return;
-      state.attendees.delete(userId);
-      io.to(courseId).emit("attendanceUpdate", { courseId, count: state.attendees.size });
+
+      state.attendees.delete(userId); // Cleanup attendee
+      io.to(courseId).emit("attendanceUpdate", {
+        courseId,
+        count: state.attendees.size, // Update count
+      });
     });
   });
 
-  return io;
+  return io; // Return Socket.IO instance
 }
 
+// Get active Socket.IO instance
 export function getIO() {
   return global.__io;
 }
 
+// Start a live class
 export function startLive(courseId: string, instructorId: string) {
   const map = ensureState();
-  if (map.has(courseId)) return map.get(courseId);
+
+  if (map.has(courseId)) return map.get(courseId); // Prevent duplicate sessions
 
   const newState: LiveClassState = {
     courseId,
     instructorId,
-    startTime: new Date(),
-    attendees: new Set(),
+    startTime: new Date(), // Record start time
+    attendees: new Set(),  // Initialize empty attendee set
   };
 
-  map.set(courseId, newState);
+  map.set(courseId, newState); // Store state
+
   const io = getIO();
-  if (io) io.to(courseId).emit("classStarted", { courseId });
+  if (io) io.to(courseId).emit("classStarted", { courseId }); // Notify clients
+
   return newState;
 }
 
+// End a live class programmatically
 export async function endLive(courseId: string) {
   const map = ensureState();
   const state = map.get(courseId);
   if (!state) return null;
 
   try {
-    await dbConnect();
+    await dbConnect(); // Connect DB
     await LiveSessionModel.create({
       courseId,
       instructorId: state.instructorId,
       startTime: state.startTime,
       endTime: new Date(),
-      attendees: Array.from(state.attendees),
+      attendees: Array.from(state.attendees), // Persist attendees
     });
   } catch (err) {
     console.error("endLive persist error", err);
   }
 
-  map.delete(courseId);
+  map.delete(courseId); // Remove state
+
   const io = getIO();
-  if (io) io.to(courseId).emit("classEnded", { courseId });
+  if (io) io.to(courseId).emit("classEnded", { courseId }); // Notify clients
+
   return true;
 }
 
+// Get current live class state
 export function getLiveState(courseId: string) {
   const map = ensureState();
-  return map.get(courseId) || null;
+  return map.get(courseId) || null; // Return state or null
 }

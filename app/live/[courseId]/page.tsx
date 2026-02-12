@@ -1,7 +1,6 @@
 import LiveClient from "./LiveClient";
 import dbConnect from "@/lib/mongodb";
 import Course from "@/lib/models/Course";
-import InstructorBadge from '@/components/InstructorBadge';
 
 type Props = { params: { courseId: string } };
 
@@ -20,21 +19,12 @@ export default async function Page({ params }: Props) {
     }
   }
 
-  // If no course found (or invalid ID), assume it's an Instant Meeting
-  // We still allow rendering the LiveClient so people can join by ID
-  const title = course?.title || "Instant Meeting";
-  const desc = course?.description || "Live Video Session";
+  const title = course?.title || "Operational Meeting";
   const instructorId = course?.instructor ? String(course.instructor) : undefined;
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold">{title} — Live</h1>
-      {instructorId && <InstructorBadge instructorId={instructorId} />}
-      <p className="mt-2 text-sm text-gray-600">{desc}</p>
-
-      <div className="mt-6">
-        <LiveClient courseId={courseId} instructorId={instructorId} />
-      </div>
+    <div className="min-h-screen bg-[#050505] overflow-hidden">
+      <LiveClient courseId={courseId} instructorId={instructorId} initialTitle={title} />
     </div>
   );
 }
