@@ -229,6 +229,7 @@ export default function ProfilePage() {
                     <span className="text-[9px] font-black text-gray-500 tracking-widest uppercase block mb-1">Account ID</span>
                     <span className="text-[11px] font-mono text-white opacity-40 break-all leading-tight">{user.id}</span>
                   </div>
+
                 </div>
 
                 {/* Host Action */}

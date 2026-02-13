@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import Course from '@/lib/models/Course';
+import User from '@/lib/models/User';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, Radio, Users, Clock, ChevronRight } from 'lucide-react';
@@ -9,6 +10,7 @@ type LiveSession = {
   courseId: string;
   title?: string | null;
   instructorId?: string;
+  instructorName?: string | null;
   count?: number;
   startTime?: Date;
 };
@@ -36,17 +38,27 @@ export default async function Page() {
 
   for (const [courseId, state] of map.entries()) {
     let title: string | null = null;
+    let instructorName: string | null = null;
+
     try {
       const course = await Course.findById(courseId).lean() as any;
       title = course?.title || null;
+
+      // Fetch instructor name
+      if (state.instructorId) {
+        const instructor = await User.findById(state.instructorId).lean() as any;
+        instructorName = instructor?.name || null;
+      }
     } catch (err) {
       title = null;
+      instructorName = null;
     }
 
     sessions.push({
       courseId,
       title,
       instructorId: state.instructorId,
+      instructorName,
       count: (state.attendees && state.attendees.size) || 0,
       startTime: state.startTime,
     });
@@ -94,6 +106,16 @@ export default async function Page() {
                     {s.title || 'Untitled Session'}
                   </h2>
 
+                  {s.instructorName && (
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Instructor: <span className="text-white">{s.instructorName}</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-center gap-6 mb-12">
                     <div className="flex items-center gap-2 text-gray-500">
                       <Clock size={14} />
@@ -108,7 +130,7 @@ export default async function Page() {
                   </div>
 
                   <Link
-                    href={`/live/${s.courseId}`}
+                    href={`/live/${s.courseId}/join`}
                     className="w-full bg-white text-black py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-2xl shadow-black/50"
                   >
                     JOIN SESSION <ChevronRight size={14} />

@@ -35,11 +35,17 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid email or password");
           }
 
+          // Generate memberId if missing (lazy migration)
+          if (!user.memberId) {
+            await user.save();
+          }
+
           return {
             id: user._id.toString(),
             email: user.email,
             name: user.name,
             role: user.role,
+            memberId: user.memberId,
             emailVerified: user.emailVerified,
           };
         } catch (err) {
@@ -53,6 +59,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }: any) {
       if (user) {
         token.role = user.role;
+        token.memberId = user.memberId;
         token.emailVerified = user.emailVerified;
       }
       return token;
@@ -61,6 +68,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.sub;
         session.user.role = token.role;
+        session.user.memberId = token.memberId;
         session.user.emailVerified = token.emailVerified;
       }
       return session;
