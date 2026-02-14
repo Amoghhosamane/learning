@@ -1,6 +1,8 @@
 import dbConnect from '@/lib/mongodb';
 import Course from '@/lib/models/Course';
 
+export const dynamic = 'force-dynamic';
+
 export default async function StudentLivePage() {
   // Reuse same logic as /live overview
   // @ts-ignore

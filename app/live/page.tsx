@@ -1,8 +1,9 @@
 import dbConnect from '@/lib/mongodb';
 import Course from '@/lib/models/Course';
 import User from '@/lib/models/User';
+
+export const dynamic = 'force-dynamic';
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Play, Radio, Users, Clock, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
