@@ -34,6 +34,7 @@ export async function GET() {
         attendees: Array.from(state.attendees || []),
         count: (state.attendees && state.attendees.size) || 0,
         startTime: state.startTime,
+        visibility: state.visibility,
       });
     }
 

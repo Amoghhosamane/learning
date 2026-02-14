@@ -9,6 +9,7 @@ type LiveClassState = {
   instructorId: string;      // Instructor running the class
   startTime: Date;           // When class started
   attendees: Set<string>;    // Unique attendees (userIds)
+  visibility: 'public' | 'private' | 'class'; // Meeting visibility
 };
 
 declare global {
@@ -32,6 +33,10 @@ export function initSocket(server?: HTTPServer) {
     addTrailingSlash: false, // Prevent trailing slash issues
     cors: { origin: "*" },   // Allow all origins (dev-friendly)
   });
+
+  if (server) {
+    (server as any).io = global.__io;
+  }
 
   ensureState(); // Initialize global live state
   const io = global.__io;
@@ -148,7 +153,7 @@ export function getIO() {
 }
 
 // Start a live class
-export function startLive(courseId: string, instructorId: string) {
+export function startLive(courseId: string, instructorId: string, visibility: 'public' | 'private' | 'class' = 'public') {
   const map = ensureState();
 
   if (map.has(courseId)) return map.get(courseId); // Prevent duplicate sessions
@@ -158,6 +163,7 @@ export function startLive(courseId: string, instructorId: string) {
     instructorId,
     startTime: new Date(), // Record start time
     attendees: new Set(),  // Initialize empty attendee set
+    visibility,            // Store visibility
   };
 
   map.set(courseId, newState); // Store state

@@ -7,7 +7,7 @@ import { initSocket, getIO, startLive } from "@/lib/socket";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { courseId: providedId, type } = body;
+  const { courseId: providedId, type, visibility } = body;
 
   const session = await getServerSession(authOptions as any);
   if (!(session as any)?.user?.id)
@@ -19,8 +19,7 @@ export async function POST(req: Request) {
 
   // HANDLE INSTANT MEETING
   if (type === 'instant' || !providedId) {
-    // Generate a random 9-digit string (xxx-xxx-xxx format or just 9 chars)
-    // Simple 9 char alphanumeric
+    // Generate a random 9-character string (meeting ID)
     courseId = Math.random().toString(36).substring(2, 11);
   } else {
     // HANDLE COURSE MEETING
@@ -34,7 +33,7 @@ export async function POST(req: Request) {
 
 
 
-  const state = startLive(courseId, (session as any).user.id);
+  const state = startLive(courseId, (session as any).user.id, visibility || 'public');
   const io = getIO();
   if (io) io.to(courseId).emit("classStarted", { courseId });
 

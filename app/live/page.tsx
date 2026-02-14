@@ -54,6 +54,8 @@ export default async function Page() {
       instructorName = null;
     }
 
+    if (state.visibility && state.visibility !== 'public') continue;
+
     sessions.push({
       courseId,
       title,

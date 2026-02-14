@@ -42,9 +42,10 @@ export default async function Page({ params }: Props) {
   const cookieStore = await cookies();
   const hasAccessCookie = cookieStore.get(`access-live-${courseId}`);
   const isInstructor = session?.user?.id === instructorId;
-  const isAdmin = session?.user?.role === 'admin';
+  const isAdmin = (session?.user as any)?.role === 'admin';
+  const isPublic = liveSession?.visibility === 'public';
 
-  if (!isInstructor && !isAdmin && !hasAccessCookie) {
+  if (!isInstructor && !isAdmin && !hasAccessCookie && !isPublic) {
     redirect(`/live/${courseId}/join`);
   }
 

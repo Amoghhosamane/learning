@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
         return response;
     } catch (error) {
-        console.error("Member ID validation error:", error);
+        console.error("Meeting ID validation error:", error);
         return NextResponse.json(
             { success: false, error: "Internal server error" },
             { status: 500 }

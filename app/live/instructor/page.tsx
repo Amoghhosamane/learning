@@ -13,6 +13,7 @@ export default function InstructorLivePage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [courseId, setCourseId] = useState("");
+  const [visibility, setVisibility] = useState<'public' | 'private' | 'class'>('public');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,7 +58,11 @@ export default function InstructorLivePage() {
       const res = await fetch('/api/live/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId: targetId, type: !targetId ? 'instant' : undefined })
+        body: JSON.stringify({
+          courseId: targetId,
+          type: !targetId ? 'instant' : undefined,
+          visibility: visibility
+        })
       });
       const json = await res.json();
       if (!res.ok) setError(json.error || 'Failed to initialize transmission');
@@ -110,6 +115,53 @@ export default function InstructorLivePage() {
           </p>
         </motion.div>
 
+        {/* Visibility Controls */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12 p-8 bg-white/[0.02] border border-white/10 rounded-[2.5rem]"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Shield size={16} className="text-red-600" />
+            <span className="text-[10px] font-black tracking-widest uppercase italic">Session Visibility Settings</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => setVisibility('public')}
+              className={`p-6 rounded-3xl border transition-all text-left flex flex-col gap-2 ${visibility === 'public' ? 'bg-red-600 border-red-500 shadow-2xl shadow-red-900/40' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest">🌐 Public</span>
+                {visibility === 'public' && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              </div>
+              <p className="text-[11px] font-medium opacity-60">Visible to everyone in public listings. No approval needed.</p>
+            </button>
+
+            <button
+              onClick={() => setVisibility('private')}
+              className={`p-6 rounded-3xl border transition-all text-left flex flex-col gap-2 ${visibility === 'private' ? 'bg-red-600 border-red-500 shadow-2xl shadow-red-900/40' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest">🔒 Private</span>
+                {visibility === 'private' && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              </div>
+              <p className="text-[11px] font-medium opacity-60">Hidden from listings. Join via Meeting ID only.</p>
+            </button>
+
+            <button
+              onClick={() => setVisibility('class')}
+              className={`p-6 rounded-3xl border transition-all text-left flex flex-col gap-2 ${visibility === 'class' ? 'bg-red-600 border-red-500 shadow-2xl shadow-red-900/40' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest">🎓 Private Class</span>
+                {visibility === 'class' && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              </div>
+              <p className="text-[11px] font-medium opacity-60">Only for invited participants. Requires Meeting ID.</p>
+            </button>
+          </div>
+        </motion.div>
+
         {/* Studio Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
@@ -150,7 +202,7 @@ export default function InstructorLivePage() {
                         disabled={loading}
                         className="flex-1 bg-white text-black py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
                       >
-                        <Play size={12} fill="currentColor" /> START
+                        <Play size={12} fill="currentColor" /> START SESSION
                       </button>
                     </div>
                   </div>

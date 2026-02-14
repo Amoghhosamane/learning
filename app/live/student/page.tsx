@@ -18,6 +18,8 @@ export default async function StudentLivePage() {
   const sessions: any[] = [];
 
   for (const [courseId, state] of map.entries()) {
+    if (state.visibility && state.visibility !== 'public') continue;
+
     let title: string | null = null;
     try {
       const course = await Course.findById(courseId).lean() as any;

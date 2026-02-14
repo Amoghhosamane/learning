@@ -41,18 +41,54 @@ export default function LiveClient({ courseId, instructorId, initialTitle }: Pro
   const streamRef = useRef<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [visibility, setVisibility] = useState<'public' | 'private' | 'class'>('public');
+
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { scrollToBottom(); }, [messages, isChatOpen]);
 
-  // Socket Init
+  // Socket Init & Visibility Check
   useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch("/api/live/status");
+        const data = await res.json();
+        const current = data.sessions?.find((s: any) => s.courseId === courseId);
+        if (current?.visibility) setVisibility(current.visibility);
+      } catch (err) {
+        console.warn("Failed to fetch session status", err);
+      }
+    };
+    fetchStatus();
+
     fetch("/api/socket").catch((err) => console.warn("Socket fetch init failed", err));
 
-    const s = io({ path: "/api/socket", reconnection: true });
+    const s = io({
+      path: "/api/socket",
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+    });
     socketRef.current = s;
 
     s.on("connect", () => {
-      console.log("Connected to live server");
+      console.log("✅ WebSocket connected:", s.id);
+      if (session?.user?.id) {
+        console.log("📤 Emitting joinClass for user:", session.user.id);
+        s.emit("joinClass", { courseId, userId: session.user.id });
+      }
+    });
+
+    s.on("connect_error", (err) => {
+      console.error("❌ WebSocket connection error:", err);
+    });
+
+    s.on("disconnect", (reason) => {
+      console.warn("🔌 WebSocket disconnected:", reason);
+    });
+
+    s.on("chatMessage", (msg: Message) => {
+      console.log("📩 Received chat message:", msg);
+      setMessages((prev) => [...prev, msg]);
     });
 
     s.on("classStarted", ({ courseId: id }) => { if (id === courseId) setIsLive(true); });
@@ -65,20 +101,12 @@ export default function LiveClient({ courseId, instructorId, initialTitle }: Pro
 
     s.on("attendanceUpdate", ({ courseId: id, count }) => { if (id === courseId) setAttendance(count); });
 
-    s.on("chatMessage", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+    s.on("error", (err) => {
+      console.error("❌ Socket error:", err);
     });
 
     return () => { if (s.connected) s.disconnect(); };
-  }, [courseId, router]);
-
-  // Join/Leave
-  useEffect(() => {
-    const s = socketRef.current;
-    if (!s || !session?.user?.id) return;
-    s.emit("joinClass", { courseId, userId: session.user.id });
-    return () => { s.emit("leaveClass", { courseId }); };
-  }, [session, courseId]);
+  }, [courseId, router, session?.user?.id]);
 
   // Camera logic
   useEffect(() => {
@@ -102,7 +130,14 @@ export default function LiveClient({ courseId, instructorId, initialTitle }: Pro
   const toggleCam = () => setCamOn(!camOn);
 
   const sendMessage = () => {
-    if (!messageText.trim() || !socketRef.current || !session?.user?.id) return;
+    if (!messageText.trim()) return;
+    if (!socketRef.current || !socketRef.current.connected) {
+      console.error("❌ Cannot send message: Socket not connected");
+      return;
+    }
+    if (!session?.user?.id) return;
+
+    console.log("📤 Sending chat message:", messageText);
     socketRef.current.emit("chatMessage", {
       courseId,
       userId: session.user.id,
@@ -250,7 +285,12 @@ export default function LiveClient({ courseId, instructorId, initialTitle }: Pro
         <header className="absolute top-8 left-8 right-8 flex items-center justify-between z-40">
           <div className="flex items-center gap-4 bg-black/40 backdrop-blur-3xl border border-white/10 px-8 py-3 rounded-full shadow-2xl">
             <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_12px_rgba(220,38,38,0.8)]" />
-            <h1 className="text-xs font-black tracking-widest uppercase italic pr-6 border-r border-white/10">{title}</h1>
+            <div className="flex flex-col">
+              <h1 className="text-xs font-black tracking-widest uppercase italic pr-6 border-r border-white/10 leading-none">{title}</h1>
+              <span className="text-[8px] font-black tracking-widest uppercase mt-1 opacity-60">
+                {visibility === 'public' ? '🌐 Public Session' : visibility === 'private' ? '🔒 Private Session' : '🎓 Private Class'}
+              </span>
+            </div>
             <div className="flex items-center gap-3 pl-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <Users size={14} className="text-red-600" />
               <span>{attendance} JOINED</span>
